@@ -1,0 +1,13 @@
+export const Increment = 'increment';
+export const Decrement = 'decrement';
+export const SetCategories = 'setCategories';
+export const SetProductsAdmin = 'setProductsAdmin';
+export const DeleteProductAdmin = 'deleteProductAdmin';
+export const AddProductToBasket = 'addProductToBasket';
+export const RemoveProductFromBasket = 'removeProductFromBasket';
+export const IncrementItemBasket = 'incrementItemBasket';
+export const DecrementtItemBasket = 'decrementtItemBasket';
+export const RemoveAllProductFromBasket = 'removeAllProductFromBasket';
+export const SetOrdersAdmin = 'setOrdersAdmin';
+export const SetOrdersStatusAdmin = 'setOrdersStatusAdmin';
+export const ChangeStatusOrderAdmin = 'changeStatusOrderAdmin';

@@ -1,0 +1,178 @@
+<template>
+  <div>
+    <div class="jumbotron">
+        <div class="container">
+            <h1 class="display-4">Panel Administratora - Modyfikacja stanu zamówienia</h1>
+        </div>
+    </div>
+    <div v-if="init">
+      <div class="container">
+            <div v-if="modifyStatus">
+                <div class="alert alert-success mt-3" role="alert">
+                {{modifyStatus}}
+              </div>
+            </div>
+            <div v-if="errors.length">
+            <div class="alert alert-danger mt-3" role="alert">
+              <ul v-for="error in errors" v-bind:key="error.id">
+                <li>{{error}}</li>
+              </ul>
+          </div>
+        </div>
+      </div>
+      <div class="container">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th scope="col">Nazwa użytkownika</th>
+                <th scope="col">Email użytkownika</th>
+                <th scope="col">Telefon użytkownika</th>
+                <th scope="col">Zamówienie</th>
+                <th scope="col">Wartość</th>
+                <th scope="col">Status</th>
+                <th scope="col">Data</th>
+                <th scope="col">Akcja</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="order in orders" v-bind:key="order._id">
+                <td>{{order.userName }}</td>
+                <td>{{order.userEmail}}</td>
+                <td>{{order.userPhone}}</td>
+                <td>
+                  <p v-for="v in order.orders" v-bind:key="v._id">
+                      Nazwa: <b>{{v.name}}</b>
+                      <br>
+                      Sztuk: <b>{{v.amount}}</b>
+                  </p>
+                </td>
+                <td>{{order.orderValue}}</td>
+                <td>{{order.status}}</td>
+                <td>
+                  <div v-if="order.date">
+                    {{order.date}}
+                  </div>
+                  <div v-else>
+                    Brak daty
+                  </div>
+                </td>
+                <td>
+                  <router-link :to="{ name: 'adminModifyOrderStatus', params: { id: order._id }}" class="ml-1 btn btn-outline-success" append>Modyfikuj status</router-link>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+      </div>
+    </div>
+    <div v-else>
+      <div class="container">
+          <div class="text-center">
+            <h4>Coś poszło nie tak z pobraniem danych o zamówieniach</h4>
+          </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { mapState } from 'vuex';
+import Vue from 'vue'
+import store from '../../store/store';
+import * as type from '../../store/mutationTypes/types'
+export default {
+  name: 'AdminUnrealizedOrder',
+  data () {
+    return {
+      init: false,
+      errors: [],
+      modifyStatus: null,
+    }
+  },
+  computed: mapState({
+      orders: (state) => {
+        let changeOrder = state.orders
+        changeOrder = changeOrder.map((value) =>{
+          
+          let statusName = ""
+          state.status.forEach((val) => {
+            if(val._id === value.status)
+              statusName = val.name
+          })
+          let orders = []
+          let orderValue = 0
+          value.orders.forEach((val) => {
+            state.products.forEach((product) => {
+              if(val.productId === product._id)
+              {
+                orders.push({name: product.name, amount: val.amount})
+                orderValue += val.amount * product.price.$numberDecimal
+              }
+                
+            })
+          })
+          let factor = Math.pow(10, 2);
+          orderValue = Math.round(orderValue*factor)/factor
+          let obj = {
+            _id: value._id,
+            userName: value.userName,
+            userEmail: value.userEmail,
+            userPhone: value.userPhone,
+            status: statusName,
+            orders: orders,
+            orderValue: orderValue,
+            date: value.date
+          }
+          return obj
+        })
+        
+        let sortCompare = (a,b) => {
+          if ( a.status < b.status ){
+            return -1;
+          }
+          if ( a.status > b.status ){
+            return 1;
+          }
+          return 0;
+        }
+        changeOrder.sort( sortCompare );
+        return changeOrder
+      }
+  }),
+  mounted () {
+      Vue.axios.get('http://localhost:3000/orders')
+        .then(response => {
+            if(response.status === 200){
+                store.dispatch({
+                  type: type.SetOrdersAdmin,
+                  orders: response.data
+                })
+                
+                Vue.axios.get('http://localhost:3000/status')
+                 .then(response => {
+                    store.dispatch({
+                      type: type.SetOrdersStatusAdmin,
+                      status: response.data
+                    })
+
+                   if(response.status === 200){
+                      Vue.axios.get('http://localhost:3000/products')
+                      .then(response => {
+                        if(response.status === 200){
+                            store.dispatch({
+                              type: type.SetProductsAdmin,
+                              products: response.data
+                            })
+                            this.init = true
+                        }
+                      })
+                   }
+                 })
+            }
+        })
+  }
+}
+</script>
+
+<style scoped>
+
+</style>
